@@ -1,0 +1,11 @@
+torch
+numpy
+matplotlib
+scipy
+jupyter
+notebook==6
+taming-transformers
+requests
+tqdm
+netCDF4
+xarray
