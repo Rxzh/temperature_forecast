@@ -1,0 +1,8 @@
+*.ipynb
+checkpoints/*
+*.npy
+*.npz
+*.nc
+VAE.ipynb
+VAE.ipynb
+*.ipynb
