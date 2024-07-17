@@ -1,9 +1,6 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-import torch.optim as optim
-from torch.utils.data import DataLoader, Dataset
-import numpy as np
 
 class Discriminator(nn.Module):
     def __init__(self, image_channels=1):
@@ -18,8 +15,9 @@ class Discriminator(nn.Module):
         x = F.leaky_relu(self.conv2(x), 0.2)
         x = F.leaky_relu(self.conv3(x), 0.2)
         x = x.view(x.size(0), -1)
-        x = torch.sigmoid(self.fc(x))
+        x = F.sigmoid(self.fc(x))
         return x
+
 
 class Encoder(nn.Module):
     def __init__(self, in_channels=1, latent_dim=4):
@@ -57,13 +55,11 @@ class Decoder(nn.Module):
         return x
 
 class VAE(nn.Module):
-    def __init__(self, image_channels=1, latent_dim=4, device='cpu'):
+    def __init__(self, image_channels=1, latent_dim=4):
         super(VAE, self).__init__()
         self.encoder = Encoder(in_channels=image_channels, latent_dim=latent_dim)
         self.decoder = Decoder(latent_dim=latent_dim, out_channels=image_channels)
-        self.discriminator = Discriminator(image_channels=image_channels)
-        self.device = device
-    
+
     def reparameterize(self, mu, logvar):
         std = torch.exp(0.5 * logvar)
         eps = torch.randn_like(std)
@@ -74,37 +70,3 @@ class VAE(nn.Module):
         z = self.reparameterize(mu, logvar)
         x_reconstructed = self.decoder(z)
         return x_reconstructed, mu, logvar
-    
-    def _run_epoch(self, batch, optimizer, criterion, lambda_rec=1, lambda_adv=1, lambda_kl=1):
-            self.train()
-            optimizer.zero_grad()
-            x = batch.to(self.device)
-            x_reconstructed, mu, logvar = self.forward(x)
-
-            # Reconstruction loss
-            rec_loss = criterion(x_reconstructed, x)
-
-            # KL divergence loss
-            kl_loss = -0.5 * torch.sum(1 + logvar - mu.pow(2) - logvar.exp())
-
-            # Adversarial loss
-            real_labels = torch.ones(batch.size(0), 1).to(self.device)
-            fake_labels = torch.zeros(batch.size(0), 1).to(self.device)
-
-            real_outputs = self.discriminator(x)
-            fake_outputs = self.discriminator(x_reconstructed.detach())
-
-            d_loss_real = F.binary_cross_entropy(real_outputs, real_labels)
-            d_loss_fake = F.binary_cross_entropy(fake_outputs, fake_labels)
-            d_loss = d_loss_real + d_loss_fake
-
-            g_loss = F.binary_cross_entropy(fake_outputs, real_labels)
-
-            # Total VAE loss
-            vae_loss = lambda_rec * rec_loss + lambda_adv * g_loss + lambda_kl * kl_loss
-            vae_loss.backward()
-            optimizer.step()
-
-            return vae_loss.item(), rec_loss.item(), kl_loss.item(), g_loss.item()
-
-
