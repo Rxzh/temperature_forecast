@@ -5,9 +5,9 @@ import torch.nn.functional as F
 class Discriminator(nn.Module):
     def __init__(self, image_channels=1):
         super(Discriminator, self).__init__()
-        self.conv1 = nn.Conv2d(image_channels, 1, kernel_size=4, stride=2, padding=1)  # 192x160
-        self.conv2 = nn.Conv2d(1, 2, kernel_size=4, stride=2, padding=1)  # 96x80
-        self.conv3 = nn.Conv2d(2, 4, kernel_size=4, stride=2, padding=1)  # 48x40
+        self.conv1 = nn.Conv2d(image_channels, 1, kernel_size=3, stride=2, padding=1)  # 192x160
+        self.conv2 = nn.Conv2d(1, 2, kernel_size=3, stride=2, padding=1)  # 96x80
+        self.conv3 = nn.Conv2d(2, 4, kernel_size=3, stride=2, padding=1)  # 48x40
         self.fc = nn.Linear(4 * 48 * 40, 1)
     
     def forward(self, x):
@@ -22,16 +22,20 @@ class Discriminator(nn.Module):
 class Encoder(nn.Module):
     def __init__(self, in_channels=1, latent_dim=4):
         super(Encoder, self).__init__()
-        self.conv1 = nn.Conv2d(in_channels, 1, kernel_size=4, stride=2, padding=1)  # 192x160
-        self.conv2 = nn.Conv2d(1, 2, kernel_size=4, stride=2, padding=1)  # 96x80
-        self.conv3 = nn.Conv2d(2, 4, kernel_size=4, stride=2, padding=1)  # 48x40
+        self.conv1 = nn.Conv2d(in_channels, 1, kernel_size=3, stride=2, padding=1)  # 192x160
+        self.conv2 = nn.Conv2d(1, 2, kernel_size=3, stride=2, padding=1)  # 96x80
+        self.conv3 = nn.Conv2d(2, 4, kernel_size=3, stride=2, padding=1)  # 48x40
         self.fc_mu = nn.Linear(4 * 48 * 40, latent_dim)
         self.fc_logvar = nn.Linear(4 * 48 * 40, latent_dim)
     
     def forward(self, x):
+        # torch.Size([32, 1, 384, 320])
         x = F.relu(self.conv1(x))
+        # torch.Size([32, 1, 192, 160])
         x = F.relu(self.conv2(x))
+        # torch.Size([32, 2, 96, 80])
         x = F.relu(self.conv3(x))
+        # torch.Size([32, 4, 48, 40])
 
         x = x.view(x.size(0), -1)
         mu = self.fc_mu(x)
